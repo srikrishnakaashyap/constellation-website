@@ -242,6 +242,23 @@ footer{display:grid;gap:28px;padding-block:8px 48px;color:var(--mute);font-size:
 .tsticky .tour-cap p{font-size:14.5px}
 .scrollhint{font:400 12px var(--mono);color:var(--mute);text-align:center;margin-top:10px}
 @media(max-width:700px){.tsticky .tour-cap h3{font-size:1.05rem}.tsticky .tour-cap p{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}}
+
+.mem{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media(max-width:900px){.mem{grid-template-columns:minmax(0,1fr)}}
+.scn{border:1px solid var(--line);border-radius:16px;background:var(--panel);padding:clamp(18px,3vw,28px);display:grid;gap:18px;align-content:start}
+.scn-h{display:grid;gap:8px}
+.who{font:500 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.scn-h h3{font-size:1.3rem}
+.rail{list-style:none;margin:0;padding:0;display:grid;gap:0;position:relative}
+.rail::before{content:"";position:absolute;left:7px;top:10px;bottom:10px;width:1px;background:var(--line2)}
+.rail li{position:relative;display:grid;gap:5px;padding:0 0 20px 32px}
+.rail li:last-child{padding-bottom:0}
+.rail li::before{content:"";position:absolute;left:0;top:3px;width:15px;height:15px;border-radius:50%;background:var(--bg);border:2px solid var(--accent)}
+.rail li:has(.status.live)::before{background:var(--ok);border-color:var(--ok)}
+.rail li p{color:var(--mute);font-size:14.5px}
+.rail li b{font-weight:600}
+.memnote{margin-top:16px;display:flex;gap:12px;align-items:flex-start;border:1px dashed var(--line2);border-radius:12px;padding:16px 20px;color:var(--mute);font-size:14.5px}
+.memnote .dot{margin-top:.5em;flex:none}.memnote b{color:var(--text)}
 @media(prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
 </style>
 </head>
@@ -255,7 +272,7 @@ footer{display:grid;gap:28px;padding-block:8px 48px;color:var(--mute);font-size:
       Constellation
     </a>
     <div class="navlinks">
-      <a href="#tour">Product</a><a href="#teams">Teams</a><a href="#shared">Why Constellation</a><a href="#trust">Security</a><a href="#evolution">Roadmap</a>
+      <a href="#memory">Team memory</a><a href="#tour">Product</a><a href="#teams">Teams</a><a href="#shared">Why Constellation</a><a href="#trust">Security</a><a href="#evolution">Roadmap</a>
     </div>
     <a class="btn primary navcta" href="#contact">Request a demo</a>
   </nav>
@@ -304,6 +321,33 @@ footer{display:grid;gap:28px;padding-block:8px 48px;color:var(--mute);font-size:
         <div><b>Engineering</b>learns about a new rule from the news.</div>
       </div>
     </div>
+  </section>
+
+  <section id="memory">
+    <div class="head">
+      <span class="eyebrow">Team memory</span>
+      <h2>When one person corrects something, everyone gets the correction.</h2>
+      <p class="lede">People know things no website says. Constellation uses your team's memory (through OpenCrawl) as a witness. A correction is made once, applied to the shared graph, and used to check every answer and draft after it.</p>
+    </div>
+    <div class="mem">
+      <article class="scn">
+        <div class="scn-h"><span class="who">Marketing corrects</span><h3>"We discontinued the Moon Boot."</h3></div>
+        <ol class="rail">
+          <li><span class="status live">LIVE TODAY</span><b>A marketer leaves a note.</b><p>"Moon Boot is discontinued. Never mention it." The note sits in the team's memory, not in a slide deck.</p></li>
+          <li><span class="status live">LIVE TODAY</span><b>The graph is corrected.</b><p>The fact-check reads the note, flags the Moon Boot node, and flags every draft built on it, with the note as the reason.</p></li>
+          <li><span class="status soon">NEXT</span><b>The next person who asks is told.</b><p>A teammate asks about featuring it in Friday's post and hears: "Not any more. Marketing marked it discontinued. Here is what changed."</p></li>
+        </ol>
+      </article>
+      <article class="scn">
+        <div class="scn-h"><span class="who">Engineering updates</span><h3>"One-click pay ships in January, not December."</h3></div>
+        <ol class="rail">
+          <li><span class="status live">LIVE TODAY</span><b>Engineering notes the change.</b><p>The note is picked up as team knowledge, so a claim that says "December" is checked against it.</p></li>
+          <li><span class="status soon">NEXT</span><b>It reaches Sales and Marketing.</b><p>Anyone whose work touches the old date is shown the update: the pitch, the post, the support answer.</p></li>
+          <li><span class="status soon">NEXT</span><b>Everyone answers the same way.</b><p>Sales asks "When does one-click pay launch?" and gets January, with who changed it and when.</p></li>
+        </ol>
+      </article>
+    </div>
+    <div class="memnote"><span class="dot acc"></span><span><b>Private by design.</b> Only team memories and connected sources are read, never raw chat transcripts. Notes inform checks and are never quoted in public output. Examples above are illustrative.</span></div>
   </section>
 
   <section id="how">
@@ -454,7 +498,7 @@ footer{display:grid;gap:28px;padding-block:8px 48px;color:var(--mute);font-size:
       <div class="f"><span class="cat">Watch</span><h3>Radar</h3><ul><li>Live news, regulation and competitor moves from the open web.</li><li>Severity, effective date and an act-by clock.</li><li>Weekly briefing and watch topics you control.</li><li>Cited deep dive on any signal.</li></ul></div>
       <div class="f"><span class="cat">Prove</span><h3>Auditor</h3><ul><li>Claim audit with Verified, Partly or Unsupported verdicts.</li><li>Verify now re-fetches the page live with a content hash.</li><li>Fact-checks the graph, the Radar and every draft between runs.</li><li>Removed items are restorable. The log shows what it caught.</li></ul></div>
       <div class="f"><span class="cat">Act</span><h3>Actions and Workflows</h3><ul><li>Reel, post and alert drafts with hook, script, shot list and caption.</li><li>Pending, Approved and Dismissed queues.</li><li>Scheduled and event-triggered workflows with run history.</li><li>Templates: Monday content plan, daily regulation watch, weekly competitor digest.</li></ul></div>
-      <div class="f"><span class="cat">Private knowledge</span><h3>Documents and team memory</h3><ul><li>Upload PDF, DOCX, TXT or MD. Tagged private.</li><li>Informs strategy. Never quoted in public output.</li><li>Team memory can confirm an account or flag an impostor.</li></ul></div>
+      <div class="f"><span class="cat">Private knowledge</span><h3>Documents and team memory</h3><ul><li>Upload PDF, DOCX, TXT or MD. Tagged private.</li><li>Informs strategy. Never quoted in public output.</li><li>Team memory (OpenCrawl) confirms an account, flags an impostor, and catches claims your team says are out of date.</li></ul></div>
       <div class="f"><span class="cat">Share</span><h3>Share card</h3><ul><li>A 1200x630 card and post draft built from the real audit numbers.</li><li>Rewrite suggestions for claims that fail the audit.</li></ul></div>
       <div class="f"><span class="cat">Teams</span><h3>Persona switcher</h3><ul><li>Marketing is live.</li><li>Sales, Support, Compliance and Engineering are visible and marked coming soon.</li><li>A "Suggest a persona" entry collects the next team to build.</li></ul></div>
     </div>
@@ -489,6 +533,7 @@ footer{display:grid;gap:28px;padding-block:8px 48px;color:var(--mute);font-size:
           <div class="pc"><h3>Workflow mapping</h3><p>Teams, owners, processes and handoffs become first-class graph entities, not just the public company.</p></div>
           <div class="pc"><h3>Role-based views and sharing</h3><p>Per-persona home screens, team spaces, and "share this context with Legal" with permissions on private nodes.</p></div>
           <div class="pc"><h3>Connectors</h3><p>Slack, Google Drive, Notion, Confluence, CRM and ticketing, so missing context is captured where it already lives.</p></div>
+          <div class="pc"><h3>Corrections that travel</h3><p>Tell the next person who asks that an answer changed, and share Engineering updates with Sales and Marketing automatically.</p></div>
           <div class="pc"><h3>Passage-level citations</h3><p>Every source chunked into passages and concepts, so each citation points at the exact sentence.</p></div>
         </div>
       </div>
