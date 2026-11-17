@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Constellation</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one long scroll. Hero = thesis + live constellation canvas; then pipeline, agents, personas (tabs), shared context, trust, status. */
+:root{
+  --bg:#0B0D1A; --panel:#12152A; --panel2:#181C36; --line:#242A4D; --line2:#323965;
+  --text:#E9EBF8; --mute:#9AA2C9; --accent:#7A89FF; --accent-ink:#0B0D1A; --accent-soft:rgba(122,137,255,.14);
+  --ok:#4FDBA0; --warn:#F5BC52; --bad:#FF7585;
+  --display:'Bricolage Grotesque','Inter',system-ui,sans-serif; --body:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif; --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
+  --bg:#F5F6FC; --panel:#FFFFFF; --panel2:#EEF0FA; --line:#DCE0F2; --line2:#C5CBE8;
+  --text:#14172E; --mute:#59608A; --accent:#4553D6; --accent-ink:#FFFFFF; --accent-soft:rgba(69,83,214,.1);
+  --ok:#0E8F5F; --warn:#9A6400; --bad:#C62A3F; color-scheme:light}}
+:root[data-theme="light"]{
+  --bg:#F5F6FC; --panel:#FFFFFF; --panel2:#EEF0FA; --line:#DCE0F2; --line2:#C5CBE8;
+  --text:#14172E; --mute:#59608A; --accent:#4553D6; --accent-ink:#FFFFFF; --accent-soft:rgba(69,83,214,.1);
+  --ok:#0E8F5F; --warn:#9A6400; --bad:#C62A3F; color-scheme:light}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font:16px/1.6 var(--body);margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+.wrap{max-width:1120px;margin:0 auto}
+h1,h2,h3{font-family:var(--display);font-weight:700;letter-spacing:-.02em;line-height:1.08;margin:0;text-wrap:balance}
+h1{font-size:clamp(2.5rem,6vw,4.4rem)}
+h2{font-size:clamp(1.9rem,3.6vw,2.8rem)}
+h3{font-size:1.25rem;letter-spacing:-.01em;line-height:1.25}
+p{margin:0}
+.eyebrow{font:500 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.lede{font-size:1.15rem;color:var(--mute);max-width:60ch}
+section{padding-block:clamp(56px,9vw,104px)}
+.head{display:grid;gap:16px;margin-bottom:44px;max-width:760px}
+
+/* nav */
+nav{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:20px}
+.brand{display:flex;align-items:center;gap:10px;font:700 1.15rem var(--display);text-decoration:none}
+.brand svg{width:26px;height:26px}
+.navlinks{display:flex;gap:22px;font-size:14px;color:var(--mute);margin-left:auto;margin-right:12px}.navcta{padding:9px 16px;font-size:14px;white-space:nowrap}
+.navlinks a{text-decoration:none}.navlinks a:hover{color:var(--text)}
+@media(max-width:700px){.navlinks{display:none}}
+
+/* hero */
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:48px;align-items:center;padding-block:clamp(28px,5vw,64px) clamp(56px,8vw,96px)}
+@media(max-width:900px){.hero{grid-template-columns:minmax(0,1fr)}}
+.hero-copy{display:grid;gap:24px}
+.badges{display:flex;flex-wrap:wrap;gap:8px}
+.pill{display:inline-flex;align-items:center;gap:7px;font:500 12px/1 var(--mono);padding:7px 11px;border:1px solid var(--line2);border-radius:999px;color:var(--mute);background:var(--panel)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.dot.warn{background:var(--warn)}.dot.bad{background:var(--bad)}.dot.acc{background:var(--accent)}
+.stage{position:relative;border:1px solid var(--line);border-radius:14px;background:var(--panel);overflow:hidden}
+.stage canvas{display:block;width:100%;height:440px;touch-action:manipulation}
+@media(max-width:600px){.stage canvas{height:360px}}
+.stage-cap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 14px;border-top:1px solid var(--line);font:400 12px var(--mono);color:var(--mute)}
+.legend{display:flex;gap:14px;flex-wrap:wrap}
+.legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.tip{position:absolute;pointer-events:none;max-width:240px;background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.45;box-shadow:0 12px 32px rgba(0,0,0,.25);transform:translate(-50%,calc(-100% - 14px))}
+.tip b{display:block;font-weight:600}
+.tip .src{font:400 11px var(--mono);color:var(--mute);margin-top:4px;word-break:break-all}
+.tip .flag{font:500 11px var(--mono);margin-top:6px;color:var(--bad)}
+
+/* buttons */
+.cta{display:flex;gap:12px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:8px;font:600 15px var(--body);padding:13px 20px;border-radius:10px;border:1px solid var(--line2);text-decoration:none;color:var(--text);background:transparent;cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:hover{filter:brightness(1.08)}
+
+/* problem */
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px}
+@media(max-width:860px){.split{grid-template-columns:minmax(0,1fr);gap:28px}}
+.scatter{display:grid;gap:10px}
+.scatter div{display:flex;gap:14px;align-items:baseline;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--mute)}
+.scatter b{color:var(--text);font-weight:600;min-width:84px}
+
+/* pipeline (a real sequence) */
+.pipe{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;counter-reset:s}
+@media(max-width:960px){.pipe{grid-template-columns:minmax(0,1fr)}}
+.step{position:relative;border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:20px;display:grid;gap:10px;align-content:start}
+.step .n{font:500 12px var(--mono);color:var(--accent)}
+.step p{color:var(--mute);font-size:14.5px}
+.step code,.mono{font:400 12px var(--mono);color:var(--mute)}
+
+/* agents */
+.agents{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media(max-width:900px){.agents{grid-template-columns:minmax(0,1fr)}}
+.agent{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:24px;display:grid;gap:14px;align-content:start}
+.agent .tag{font:500 12px var(--mono);color:var(--accent)}
+.agent ul{margin:0;padding:0;list-style:none;display:grid;gap:8px;color:var(--mute);font-size:14.5px}
+.agent li{padding-left:16px;position:relative}
+.agent li::before{content:"";position:absolute;left:0;top:.65em;width:6px;height:1px;background:var(--accent)}
+.agent .demo{margin-top:4px;border-top:1px solid var(--line);padding-top:14px;font-size:13.5px;color:var(--text)}
+.verdicts{display:flex;gap:8px;flex-wrap:wrap}
+.v{font:500 11px var(--mono);padding:5px 9px;border-radius:6px;border:1px solid var(--line2)}
+.v.ok{color:var(--ok)}.v.part{color:var(--warn)}.v.no{color:var(--bad)}
+.gate{margin-top:16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;border:1px dashed var(--line2);border-radius:12px;padding:16px 20px;color:var(--mute)}
+.gate b{color:var(--text)}
+
+/* personas */
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.tab{font:500 14px var(--body);padding:10px 16px;border-radius:999px;border:1px solid var(--line2);background:transparent;color:var(--mute);cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.tab[aria-selected="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--text)}
+.panelp{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:28px;border:1px solid var(--line);border-radius:16px;background:var(--panel);padding:clamp(20px,3vw,34px)}
+@media(max-width:860px){.panelp{grid-template-columns:minmax(0,1fr)}}
+.panelp .l{display:grid;gap:16px;align-content:start}
+.panelp ul{margin:0;padding:0;list-style:none;display:grid;gap:10px;color:var(--mute)}
+.panelp li{padding-left:18px;position:relative}
+.panelp li::before{content:"";position:absolute;left:0;top:.7em;width:8px;height:1px;background:var(--accent)}
+.status{font:500 11px var(--mono);padding:5px 9px;border-radius:6px;width:max-content}
+.status.live{color:var(--ok);border:1px solid var(--ok)}
+.status.soon{color:var(--warn);border:1px solid var(--warn)}
+.chat{border:1px solid var(--line);border-radius:12px;background:var(--bg);padding:18px;display:grid;gap:14px;align-content:start;min-width:0}
+.q{align-self:end;justify-self:end;max-width:92%;background:var(--accent-soft);border:1px solid var(--line2);border-radius:12px 12px 2px 12px;padding:10px 14px;font-size:14.5px}
+.a{font-size:14.5px;display:grid;gap:10px}
+.cite{font:500 11px var(--mono);color:var(--accent);border:1px solid var(--line2);border-radius:5px;padding:1px 5px;margin:0 1px}
+.srcs{display:grid;gap:6px;font:400 12px var(--mono);color:var(--mute)}
+.srcs span{display:block;overflow-wrap:anywhere}
+.ex{font:400 11px var(--mono);color:var(--mute)}
+
+/* shared context */
+.flow{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1.1fr) auto minmax(0,1fr);gap:16px;align-items:stretch}
+@media(max-width:960px){.flow{grid-template-columns:minmax(0,1fr)}.flow .arrow{transform:rotate(90deg);justify-self:center}}
+.col{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:20px;display:grid;gap:10px;align-content:start}
+.col h3{font-size:1rem}
+.chip{display:flex;gap:10px;align-items:center;font-size:14px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--mute)}
+.chip b{color:var(--text);font-weight:500}
+.chip.priv{border-style:dashed}
+.arrow{align-self:center;color:var(--accent);font:500 22px var(--mono)}
+.core{border-color:var(--accent);background:linear-gradient(180deg,var(--accent-soft),transparent 70%),var(--panel)}
+.values{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:28px}
+@media(max-width:760px){.values{grid-template-columns:minmax(0,1fr)}}
+.val{border-top:1px solid var(--line2);padding-top:16px;display:grid;gap:8px}
+.val p{color:var(--mute);font-size:15px}
+
+/* trust */
+.trust{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel)}
+@media(max-width:900px){.trust{grid-template-columns:minmax(0,1fr)}}
+.t{padding:24px;display:grid;gap:8px;align-content:start;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.t:nth-child(3n){border-right:0}.t:nth-last-child(-n+3){border-bottom:0}
+@media(max-width:900px){.t{border-right:0}.t:nth-last-child(-n+3){border-bottom:1px solid var(--line)}.t:last-child{border-bottom:0}}
+.t p{color:var(--mute);font-size:14.5px}
+
+/* status */
+.roadmap{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media(max-width:860px){.roadmap{grid-template-columns:minmax(0,1fr)}}
+.rm{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:24px;display:grid;gap:14px;align-content:start}
+.rm ul{margin:0;padding:0;list-style:none;display:grid;gap:9px;font-size:14.5px;color:var(--mute)}
+.rm li{display:flex;gap:10px}
+.rm li::before{content:"";flex:none;width:8px;height:8px;border-radius:50%;margin-top:.55em;background:var(--ok)}
+.rm.next li::before{background:transparent;border:1px solid var(--warn)}
+
+
+/* tour */
+.frame{border:1px solid var(--line2);border-radius:14px;overflow:hidden;background:var(--panel);box-shadow:0 24px 60px rgba(0,0,0,.28)}
+.frame .bar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--panel2)}
+.frame .bar i{width:10px;height:10px;border-radius:50%;background:var(--line2)}
+.frame .bar span{margin-left:10px;font:400 12px var(--mono);color:var(--mute)}
+.frame img{display:block;width:100%;height:auto;aspect-ratio:1360/850;background:var(--bg)}
+.tour-cap{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:start;margin-top:16px}
+@media(max-width:700px){.tour-cap{grid-template-columns:minmax(0,1fr)}}
+.tour-cap h3{margin-bottom:6px}.tour-cap p{color:var(--mute);max-width:70ch}
+.sample{font:500 11px var(--mono);color:var(--warn);border:1px solid var(--warn);border-radius:6px;padding:5px 9px;width:max-content}
+
+/* features grid */
+.fgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media(max-width:960px){.fgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.fgrid{grid-template-columns:minmax(0,1fr)}}
+.f{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:22px;display:grid;gap:10px;align-content:start}
+.f .cat{font:500 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.f ul{margin:0;padding:0;list-style:none;display:grid;gap:7px;color:var(--mute);font-size:14.5px}
+.f li{padding-left:16px;position:relative}
+.f li::before{content:"";position:absolute;left:0;top:.7em;width:6px;height:1px;background:var(--accent)}
+
+/* evolution timeline */
+.evo{display:grid;gap:0;position:relative;margin-left:8px}
+.evo::before{content:"";position:absolute;left:7px;top:8px;bottom:8px;width:1px;background:var(--line2)}
+.ph{position:relative;display:grid;grid-template-columns:minmax(0,200px) minmax(0,1fr);gap:28px;padding:0 0 36px 36px}
+@media(max-width:820px){.ph{grid-template-columns:minmax(0,1fr);gap:12px}}
+.ph::before{content:"";position:absolute;left:0;top:6px;width:15px;height:15px;border-radius:50%;background:var(--bg);border:2px solid var(--accent)}
+.ph.now::before{background:var(--ok);border-color:var(--ok)}
+.ph .when{display:grid;gap:6px;align-content:start}
+.ph .when b{font:700 1.3rem var(--display)}
+.ph .when span{font:400 12px var(--mono);color:var(--mute)}
+.pcards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media(max-width:700px){.pcards{grid-template-columns:minmax(0,1fr)}}
+.pc{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:16px 18px;display:grid;gap:6px;align-content:start}
+.pc h3{font-size:1rem}.pc p{color:var(--mute);font-size:14.5px}
+.ph.now .pc{border-color:var(--line2)}
+.invite{margin-top:8px;border:1px dashed var(--line2);border-radius:12px;padding:16px 20px;color:var(--mute);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.invite b{color:var(--text)}
+
+
+.three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media(max-width:820px){.three{grid-template-columns:minmax(0,1fr)}}
+.s3{border:1px solid var(--line2);border-radius:14px;background:var(--panel);padding:22px;display:grid;gap:8px;align-content:start}
+.s3 .n{width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font:700 14px var(--display);display:grid;place-items:center}
+.s3 p{color:var(--mute);font-size:15px}
+/* footer */
+
+.cgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:40px;align-items:start}
+@media(max-width:900px){.cgrid{grid-template-columns:minmax(0,1fr)}}
+.cl{display:grid;gap:18px}
+.next{list-style:none;margin:0;padding:0;display:grid;gap:12px;color:var(--mute);font-size:15px}
+.next li{padding-left:18px;position:relative}.next li::before{content:"";position:absolute;left:0;top:.7em;width:8px;height:1px;background:var(--accent)}
+.next b{color:var(--text);font-weight:600}
+.sel{user-select:all;color:var(--text)}
+.copy{font:500 11px var(--mono);color:var(--accent);background:transparent;border:1px solid var(--line2);border-radius:6px;padding:3px 8px;cursor:pointer;margin-left:6px}
+.cform{display:grid;gap:14px;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:clamp(18px,3vw,28px)}
+.row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media(max-width:560px){.row2{grid-template-columns:minmax(0,1fr)}}
+.cform label{display:grid;gap:6px;font:500 13px var(--body);color:var(--mute);min-width:0}
+.cform input,.cform select,.cform textarea{font:400 15px var(--body);color:var(--text);background:var(--panel);border:1px solid var(--line2);border-radius:9px;padding:11px 12px;width:100%;min-width:0}
+.cform textarea{resize:vertical}
+.cform input[aria-invalid="true"]{border-color:var(--bad)}
+.cform .btn{justify-content:center}
+.note{font-size:14px;color:var(--mute);min-height:1.4em;overflow-wrap:anywhere}
+.note a{color:var(--accent);font-weight:600}
+.final{border:1px solid var(--line2);border-radius:20px;padding:clamp(24px,5vw,56px);background:radial-gradient(900px 300px at 85% 0%,var(--accent-soft),transparent 70%),var(--panel)}
+footer{display:grid;gap:28px;padding-block:8px 48px;color:var(--mute);font-size:14px}
+.fcols{display:grid;grid-template-columns:1.4fr repeat(3,minmax(0,1fr));gap:28px;padding-top:36px;border-top:1px solid var(--line)}
+@media(max-width:760px){.fcols{grid-template-columns:repeat(2,minmax(0,1fr))}.fb{grid-column:1/-1}}
+.fcols>div{display:grid;gap:8px;align-content:start}
+.fcols b{color:var(--text);font-weight:600;margin-bottom:4px}
+.fcols a{text-decoration:none}.fcols a:hover{color:var(--text)}
+.fb p{max-width:32ch}
+.legal{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px}
+
+.track{position:relative}
+.tsticky{position:sticky;top:max(8px,env(safe-area-inset-top,0px));padding-block:10px;background:var(--bg);z-index:2}
+.tsticky .frame{max-width:min(100%,calc((100svh - 250px) * 1.6));min-width:min(100%,320px);margin-inline:auto}
+.tabs-tour{margin-bottom:12px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.tabs-tour::-webkit-scrollbar{display:none}
+.tabs-tour .tab{flex:none}
+.tsticky .tour-cap{margin-top:12px;max-width:min(100%,calc((100svh - 250px) * 1.6));margin-inline:auto}
+.tsticky .tour-cap p{font-size:14.5px}
+.scrollhint{font:400 12px var(--mono);color:var(--mute);text-align:center;margin-top:10px}
+@media(max-width:700px){.tsticky .tour-cap h3{font-size:1.05rem}.tsticky .tour-cap p{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}}
+@media(prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <nav aria-label="Primary">
+    <a class="brand" href="#top">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><g stroke="var(--line2)" stroke-width="1.5"><path d="M16 16 6 8M16 16l10-5M16 16l-7 10M16 16l9 9"/></g><circle cx="16" cy="16" r="4.5" fill="var(--accent)"/><circle cx="6" cy="8" r="2.5" fill="var(--ok)"/><circle cx="26" cy="11" r="2.5" fill="var(--warn)"/><circle cx="9" cy="26" r="2.5" fill="var(--text)"/><circle cx="25" cy="25" r="2.5" fill="var(--mute)"/></svg>
+      Constellation
+    </a>
+    <div class="navlinks">
+      <a href="#tour">Product</a><a href="#teams">Teams</a><a href="#shared">Why Constellation</a><a href="#trust">Security</a><a href="#evolution">Roadmap</a>
+    </div>
+    <a class="btn primary navcta" href="#contact">Request a demo</a>
+  </nav>
+
+  <header class="hero" id="top">
+    <div class="hero-copy">
+      <h1>One place that knows your whole company.</h1>
+      <p class="lede">Paste your website. Constellation builds a map of your company, watches the news and rules that affect it, and answers any team's questions. Every answer shows its source.</p>
+      <div class="cta">
+        <a class="btn primary" href="#contact">Request a demo</a>
+        <a class="btn" href="#tour">See the product</a>
+      </div>
+      <p class="mono">Nothing is ever published without a person's approval.</p>
+    </div>
+    <div>
+      <div class="stage" id="stage">
+        <canvas id="graph" role="img" aria-label="Example company knowledge graph. Nodes are products, audiences, claims, regulations, competitors, news and private documents. Hover or tap a node to see its source."></canvas>
+        <div class="tip" id="tip" hidden></div>
+        <div class="stage-cap">
+          <div class="legend" id="legend"></div>
+          <span>Example graph. Hover or tap a node.</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section id="simple" style="padding-top:0">
+    <div class="three">
+      <div class="s3"><span class="n">1</span><h3>Paste your website</h3><p>That's all it needs to start. Add documents if you want it to know more.</p></div>
+      <div class="s3"><span class="n">2</span><h3>It maps your company</h3><p>Products, customers, claims, competitors and rules, each linked to its source.</p></div>
+      <div class="s3"><span class="n">3</span><h3>Every team gets answers</h3><p>Ask questions, get alerts when the news or a rule changes, and approve drafted actions.</p></div>
+    </div>
+  </section>
+
+  <section id="problem" style="padding-top:0">
+    <div class="split">
+      <div class="head" style="margin:0">
+        <span class="eyebrow">The problem</span>
+        <h2>Companies don't lack tools. They lack shared context.</h2>
+        <p class="lede">Each team keeps its own copy of the truth. Answers come from memory, from the last meeting, or from whoever replied first. Every new question starts from zero.</p>
+      </div>
+      <div class="scatter">
+        <div><b>Marketing</b>publishes a claim Legal flagged last week.</div>
+        <div><b>Sales</b>promises what the website can't prove.</div>
+        <div><b>Support</b>answers from a policy doc that changed.</div>
+        <div><b>Engineering</b>learns about a new rule from the news.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="head">
+      <span class="eyebrow">Under the hood</span>
+      <h2>How the map gets built and kept honest.</h2>
+      <p class="lede">The same five steps run for every team. What changes is the question each team asks.</p>
+    </div>
+    <ol class="pipe" style="list-style:none;margin:0;padding:0">
+      <li class="step"><span class="n">STEP 1</span><h3>Ingest</h3><p>Crawl the site, find the social accounts it links to, and parse uploaded documents (PDF, DOCX, TXT, MD).</p></li>
+      <li class="step"><span class="n">STEP 2</span><h3>Extract</h3><p>An LLM pulls typed entities and relations. Each one carries its source and a confidence.</p></li>
+      <li class="step"><span class="n">STEP 3</span><h3>Fact-check</h3><p>A strict pass re-reads every node at its live source. A hallucinated node is detached and kept as proof.</p></li>
+      <li class="step"><span class="n">STEP 4</span><h3>Watch</h3><p>Radar searches live news and regulation, then scores each item against your graph in code.</p></li>
+      <li class="step"><span class="n">STEP 5</span><h3>Act</h3><p>Agents draft cited actions. A person approves, edits or dismisses each one.</p></li>
+    </ol>
+    <p class="mono" style="margin-top:18px">Node types: Company · Product · Audience · Value Prop · Brand Voice · Social Account · Post · Claim · Regulation · Competitor · Theme · Passage</p>
+  </section>
+
+  <section id="agents">
+    <div class="head">
+      <span class="eyebrow">Three agents, one graph</span>
+      <h2>Know it. Watch it. Prove it.</h2>
+      <p class="lede">Each agent hands data to the others. Each can be demoed on its own.</p>
+    </div>
+    <div class="agents">
+      <article class="agent">
+        <span class="tag">AGENT A · KNOW</span>
+        <h3>Ask anything about your company.</h3>
+        <ul>
+          <li>Builds the graph from your site, socials and private documents.</li>
+          <li>Chat answers only from the graph, with numbered citations.</li>
+          <li>Every citation is checked against what was retrieved. No source, no answer.</li>
+        </ul>
+        <div class="demo">Ask something the graph doesn't hold and it says <b>"not in the graph yet"</b> instead of guessing.</div>
+      </article>
+      <article class="agent">
+        <span class="tag">AGENT B · WATCH</span>
+        <h3>The world changed. Here is what it means for you.</h3>
+        <ul>
+          <li>Live news and regulation from the open web.</li>
+          <li>Relevance scored against your graph, with severity and an effective date.</li>
+          <li>One click for a cited deep dive, one more for a drafted action.</li>
+        </ul>
+        <div class="demo">Workflows run it on a schedule, for example every Monday, or when a high-relevance regulation appears.</div>
+      </article>
+      <article class="agent">
+        <span class="tag">AGENT C · PROVE</span>
+        <h3>Audit the claims. Audit the agents.</h3>
+        <ul>
+          <li>Every objective claim on your site gets a verdict computed in code.</li>
+          <li>Verify now re-fetches the page live and shows a content hash.</li>
+          <li>After every build and Radar run it checks the other agents' output, and flags what fails.</li>
+        </ul>
+        <div class="demo"><div class="verdicts"><span class="v ok">VERIFIED · 2+ fresh sources</span><span class="v part">PARTLY · 1 or stale</span><span class="v no">UNSUPPORTED · none</span></div></div>
+      </article>
+    </div>
+    <div class="gate"><span class="dot warn"></span><span><b>Human in the loop.</b> Agents write <code class="mono">pending</code> drafts. Approval is a person's click. Nothing is published automatically.</span></div>
+  </section>
+
+  <section id="tour">
+    <div class="head">
+      <span class="eyebrow">Product tour</span>
+      <h2>See the workspace.</h2>
+      <p class="lede">Screens from the running app, using the built-in sample company so no real company data appears.</p>
+    </div>
+    <div class="track" id="track"><div class="tsticky" id="tsticky">
+    <div class="tabs tabs-tour" role="tablist" aria-label="Product screens" id="ttabs"></div>
+    <div class="frame"><div class="bar"><i></i><i></i><i></i><span id="tcrumb">constellation / chat</span></div><img id="timg" alt="" width="1360" height="850"></div>
+    <div class="tour-cap"><div><h3 id="thead"></h3><p id="tbody"></p></div><span class="sample">SAMPLE DATA · Brightleaf Skincare</span></div>
+    <p class="scrollhint" id="shint">Keep scrolling to move through the product.</p>
+    </div></div>
+  </section>
+
+  <section id="teams">
+    <div class="head">
+      <span class="eyebrow">One graph, a lens per team</span>
+      <h2>Every team asks the same company a different question.</h2>
+      <p class="lede">Marketing is live. The other personas run on the same graph and are coming next. The persona switcher in the app already shows them.</p>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Team personas" id="tabs"></div>
+    <div class="panelp" id="persona" role="tabpanel" aria-live="polite"></div>
+  </section>
+
+  <section id="shared">
+    <div class="head">
+      <span class="eyebrow">Why enterprises pay for it</span>
+      <h2>The value is the shared context nobody else has.</h2>
+      <p class="lede">A general assistant knows the internet. It doesn't know your workflow. Constellation maps yours into one customized graph, and shares what one person knows with everyone who needs it.</p>
+    </div>
+    <div class="flow">
+      <div class="col">
+        <h3>Where context hides</h3>
+        <div class="chip"><b>Website and socials</b>public</div>
+        <div class="chip priv"><b>Contracts and decks</b>private</div>
+        <div class="chip priv"><b>Team memory</b>private</div>
+        <div class="chip"><b>News and regulation</b>live</div>
+      </div>
+      <div class="arrow" aria-hidden="true">→</div>
+      <div class="col core">
+        <h3>One cited knowledge graph</h3>
+        <div class="chip"><b>Source and confidence</b>on every node</div>
+        <div class="chip"><b>Private stays private</b>informs strategy, never quoted publicly</div>
+        <div class="chip"><b>Detached, not deleted</b>hallucinations kept as proof</div>
+      </div>
+      <div class="arrow" aria-hidden="true">→</div>
+      <div class="col">
+        <h3>Every team, same facts</h3>
+        <div class="chip"><b>Marketing</b>drafts with sources</div>
+        <div class="chip"><b>Sales · Support</b>answers from approved facts</div>
+        <div class="chip"><b>Compliance</b>rules mapped to products</div>
+        <div class="chip"><b>Engineering</b>context before it breaks</div>
+      </div>
+    </div>
+    <div class="values">
+      <div class="val"><h3>Missing context travels</h3><p>What one person knows, such as a legal caveat, a supplier change or a signed contract term, becomes context for the next person who asks. No meeting required.</p></div>
+      <div class="val"><h3>Cross-functional by default</h3><p>Marketing, legal, product, sales, support and engineering work from the same sourced facts instead of their own stale copies.</p></div>
+      <div class="val"><h3>One place for company knowledge</h3><p>Site, social, documents, news, regulation, decisions and drafts live in one graph with provenance, not in ten tools.</p></div>
+      <div class="val"><h3>A graph that fits your workflow</h3><p>The graph is customized to your company: your products, claims, markets and rules. That customization is what a generic assistant can't copy.</p></div>
+    </div>
+  </section>
+
+  <section id="trust">
+    <div class="head">
+      <span class="eyebrow">Security and trust</span>
+      <h2>Every answer shows where it came from.</h2>
+      <p class="lede">Built for companies that cannot afford a confident wrong answer.</p>
+    </div>
+    <div class="trust">
+      <div class="t"><h3>Code for facts, LLM for judgment</h3><p>Verdicts, scores and citation checks are computed in code. Voice and strategy stay with the model.</p></div>
+      <div class="t"><h3>Every claim has a source</h3><p>Claims with no source are dropped or flagged. One view highlights anything unsourced in red.</p></div>
+      <div class="t"><h3>Prompt-injection aware</h3><p>Fetched pages are wrapped as untrusted data and never decide which tools or URLs run.</p></div>
+      <div class="t"><h3>Least-privilege agents</h3><p>Agents can write suggestions. They cannot post, send or delete.</p></div>
+      <div class="t"><h3>Private documents stay private</h3><p>Uploads inform strategy and are never quoted in public output. Sending them to the model is an explicit, revocable opt-in.</p></div>
+      <div class="t"><h3>Graceful when live data is off</h3><p>Every integration falls back to sample data with a visible "sample" badge. Failures are never hidden.</p></div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="head">
+      <span class="eyebrow">Platform</span>
+      <h2>Everything in the platform today.</h2>
+      <p class="lede">The Marketing persona runs end to end on this feature set. The same parts power every other team as their personas arrive.</p>
+    </div>
+    <div class="fgrid">
+      <div class="f"><span class="cat">Build</span><h3>Company knowledge graph</h3><ul><li>Crawl the site, discover social accounts and recent posts.</li><li>Theme-first build adds sourced competitors and regulation.</li><li>Typed entities with source and confidence on every node and edge.</li><li>Live progress while the graph forms.</li></ul></div>
+      <div class="f"><span class="cat">Explore</span><h3>Graph explorer</h3><ul><li>3D and 2D views, search, public or private filters.</li><li>Switch lenses to highlight unsourced items or see what changed.</li><li>Right-click to detach or delete a node or relation.</li><li>Collapse to hubs for a clean overview.</li></ul></div>
+      <div class="f"><span class="cat">Ask</span><h3>Chat with citations</h3><ul><li>Answers only from the graph, with numbered sources.</li><li>Every citation is verified. Gaps are stated, not guessed.</li><li>Answers can end in Approve, Edit or Dismiss.</li><li>Starter prompts for competitors, regulation, brand and drafts.</li></ul></div>
+      <div class="f"><span class="cat">Watch</span><h3>Radar</h3><ul><li>Live news, regulation and competitor moves from the open web.</li><li>Severity, effective date and an act-by clock.</li><li>Weekly briefing and watch topics you control.</li><li>Cited deep dive on any signal.</li></ul></div>
+      <div class="f"><span class="cat">Prove</span><h3>Auditor</h3><ul><li>Claim audit with Verified, Partly or Unsupported verdicts.</li><li>Verify now re-fetches the page live with a content hash.</li><li>Fact-checks the graph, the Radar and every draft between runs.</li><li>Removed items are restorable. The log shows what it caught.</li></ul></div>
+      <div class="f"><span class="cat">Act</span><h3>Actions and Workflows</h3><ul><li>Reel, post and alert drafts with hook, script, shot list and caption.</li><li>Pending, Approved and Dismissed queues.</li><li>Scheduled and event-triggered workflows with run history.</li><li>Templates: Monday content plan, daily regulation watch, weekly competitor digest.</li></ul></div>
+      <div class="f"><span class="cat">Private knowledge</span><h3>Documents and team memory</h3><ul><li>Upload PDF, DOCX, TXT or MD. Tagged private.</li><li>Informs strategy. Never quoted in public output.</li><li>Team memory can confirm an account or flag an impostor.</li></ul></div>
+      <div class="f"><span class="cat">Share</span><h3>Share card</h3><ul><li>A 1200x630 card and post draft built from the real audit numbers.</li><li>Rewrite suggestions for claims that fail the audit.</li></ul></div>
+      <div class="f"><span class="cat">Teams</span><h3>Persona switcher</h3><ul><li>Marketing is live.</li><li>Sales, Support, Compliance and Engineering are visible and marked coming soon.</li><li>A "Suggest a persona" entry collects the next team to build.</li></ul></div>
+    </div>
+  </section>
+
+  <section id="evolution">
+    <div class="head">
+      <span class="eyebrow">Roadmap</span>
+      <h2>From one persona to the company's operating memory.</h2>
+      <p class="lede">The graph is the product. Each phase adds who can use it, what it knows, and where it connects.</p>
+    </div>
+    <div class="evo">
+      <div class="ph now">
+        <div class="when"><b>Today</b><span>Marketing, end to end</span></div>
+        <div class="pcards">
+          <div class="pc"><h3>Build, ask, watch, prove, act</h3><p>The full loop on one persona, with live web data and a person approving every output.</p></div>
+          <div class="pc"><h3>Fact-checked by design</h3><p>Hallucinated nodes are detached and kept as proof. Drafts built on removed facts are flagged.</p></div>
+        </div>
+      </div>
+      <div class="ph">
+        <div class="when"><b>Next</b><span>More teams on the same graph</span></div>
+        <div class="pcards">
+          <div class="pc"><h3>Sales</h3><p>Sourced talking points, competitor battlecards, and a flag on unsupported claims in a pitch.</p></div>
+          <div class="pc"><h3>Support</h3><p>Cited customer answers, with context from other teams attached to the ticket.</p></div>
+          <div class="pc"><h3>Compliance</h3><p>Regulation mapped to specific products and claims, with briefings and an audit of public statements.</p></div>
+          <div class="pc"><h3>Engineering</h3><p>Product promises mapped to systems, plus upstream and security changes scored against your stack.</p></div>
+        </div>
+      </div>
+      <div class="ph">
+        <div class="when"><b>Then</b><span>The graph maps the whole workflow</span></div>
+        <div class="pcards">
+          <div class="pc"><h3>Workflow mapping</h3><p>Teams, owners, processes and handoffs become first-class graph entities, not just the public company.</p></div>
+          <div class="pc"><h3>Role-based views and sharing</h3><p>Per-persona home screens, team spaces, and "share this context with Legal" with permissions on private nodes.</p></div>
+          <div class="pc"><h3>Connectors</h3><p>Slack, Google Drive, Notion, Confluence, CRM and ticketing, so missing context is captured where it already lives.</p></div>
+          <div class="pc"><h3>Passage-level citations</h3><p>Every source chunked into passages and concepts, so each citation points at the exact sentence.</p></div>
+        </div>
+      </div>
+      <div class="ph">
+        <div class="when"><b>Later</b><span>Enterprise scale</span></div>
+        <div class="pcards">
+          <div class="pc"><h3>Accounts and security</h3><p>Multi-tenant workspaces, SSO, billing and row-level security on every table.</p></div>
+          <div class="pc"><h3>Deeper market intelligence</h3><p>A competitor knowledge graph (launches, pricing, messaging) and review monitoring with suggested replies.</p></div>
+          <div class="pc"><h3>Support assistance</h3><p>Ticket drafting for Zendesk and Intercom, with every answer cited.</p></div>
+          <div class="pc"><h3>Publishing, with approval</h3><p>Send approved actions to the channels where they belong. Auto-posting without approval stays out of scope.</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="invite"><b>Missing your team?</b> The persona menu in the app has a "Suggest a persona" entry. That is how the next lens gets chosen.</div>
+  </section>
+
+  <section id="contact">
+    <div class="final">
+      <div class="cgrid">
+        <div class="cl">
+          <span class="eyebrow">Contact</span>
+          <h2>See Constellation on your company.</h2>
+          <p class="lede">Tell us your website and which team you want to start with. We will show you the map of your own company, live.</p>
+          <ul class="next">
+            <li><b>Reply within two working days.</b> A short call to understand your teams.</li>
+            <li><b>A live walkthrough.</b> Built from your own public website.</li>
+            <li><b>No commitment.</b> Private documents are optional and stay private.</li>
+          </ul>
+          <p class="mono">Prefer email? <span id="addr" class="sel"></span> <button class="copy" type="button" id="copy">Copy</button></p>
+        </div>
+        <form class="cform" id="cform" novalidate>
+          <div class="row2">
+            <label>Name<input id="c-name" autocomplete="name" required></label>
+            <label>Work email<input id="c-email" type="email" autocomplete="email" required></label>
+          </div>
+          <div class="row2">
+            <label>Company website<input id="c-site" placeholder="https://" autocomplete="url"></label>
+            <label>Team to start with<select id="c-team"><option>Marketing</option><option>Sales</option><option>Support</option><option>Compliance</option><option>Engineering</option><option>Several teams</option></select></label>
+          </div>
+          <label>What would you like it to do for you?<textarea id="c-msg" rows="4" placeholder="For example: keep our claims backed up, or answer customer questions from approved facts."></textarea></label>
+          <button class="btn primary" type="submit">Prepare my message</button>
+          <p class="note" id="cnote" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="fcols">
+      <div class="fb"><a class="brand" href="#top">Constellation</a><p>The operations manager that knows your whole company.</p></div>
+      <div><b>Product</b><a href="#tour">Product tour</a><a href="#features">Platform</a><a href="#evolution">Roadmap</a></div>
+      <div><b>Teams</b><a href="#teams">Marketing</a><a href="#teams">Sales</a><a href="#teams">Support</a><a href="#teams">Compliance</a><a href="#teams">Engineering</a></div>
+      <div><b>Company</b><a href="#shared">Why Constellation</a><a href="#trust">Security and trust</a><a href="#contact">Contact</a></div>
+    </div>
+    <div class="legal"><span>&copy; 2026 Constellation. All rights reserved.</span><a href="#contact">Request a demo</a></div>
+  </footer>
+</div>
+
+<script>
+(function(){
+  /* ---------- persona tabs ---------- */
+  var P=[
+    {k:'Marketing',s:'live',h:'Cited content, never a blank page.',
+     li:['Post, reel and alert drafts grounded in brand voice and live news.','Weekly content planning and competitor analysis.','Claim audit before anything goes out.'],
+     q:'Can we say "clinically proven" in Friday\'s serum post?',
+     a:'Not yet. The claim appears on your product page <span class="cite">1</span>, but no independent source backs it up <span class="cite">2</span>. Two drafts avoid it and cite the ingredient study instead.',
+     src:['[1] example.com/products/serum (live, re-fetched)','[2] Auditor verdict: UNSUPPORTED, 0 independent sources']},
+    {k:'Sales',s:'soon',h:'Pitch with facts your company can defend.',
+     li:['Talking points and answers from approved, sourced company facts.','Competitor battlecards built from the live graph.','A flag when a claim in a pitch is unsupported.'],
+     q:'Does the Pro plan meet the new EU labeling rule?',
+     a:'The graph links the rule <span class="cite">1</span> to the Pro plan\'s packaging claim <span class="cite">2</span>. Compliance has not signed off yet, so use the approved wording only.',
+     src:['[1] Regulation node, effective date from live search','[2] Claim node on the Pro plan page']},
+    {k:'Support',s:'soon',h:'Answers from the graph, with the missing context attached.',
+     li:['Customer answers drawn from products, policies and known issues, with citations.','Context from other teams surfaced when a ticket needs it.','Escalate with the sources already attached.'],
+     q:'A customer asks if the cream is safe during pregnancy.',
+     a:'The product page lists the ingredients <span class="cite">1</span>. A private legal note says no medical advice may be given <span class="cite">2</span>, so the draft points to the ingredient list and suggests asking a doctor.',
+     src:['[1] example.com/products/cream','[2] Private document (used for guidance, not quoted)']},
+    {k:'Compliance',s:'soon',h:'Know which rule touches which product.',
+     li:['Regulation Radar scored against your products and claims.','Deep-dive briefings with citations.','An audit of what the company says publicly.'],
+     q:'What changed this month that affects our packaging?',
+     a:'One high-severity item. A new labeling rule applies to two products <span class="cite">1</span> and takes effect in 30 days <span class="cite">2</span>. A deep dive and a draft internal alert are ready for review.',
+     src:['[1] Regulator notice (live search result)','[2] Effective date extracted and checked at the source']},
+    {k:'Engineering',s:'soon',h:'Product and technical context before it becomes a bug.',
+     li:['What the company promises customers, mapped to the systems behind it.','Security and dependency advisories from the live web, scored against your stack.','Missing context from other teams, surfaced early.'],
+     q:'Did anything upstream change that affects the checkout flow?',
+     a:'A payment provider announced a deprecation <span class="cite">1</span>. The graph shows the checkout page promises "one-click pay" <span class="cite">2</span>, so Product and Support have been notified.',
+     src:['[1] Provider changelog (live search result)','[2] Claim node on the checkout page']}
+  ];
+  var tabs=document.getElementById('tabs'),panel=document.getElementById('persona'),cur=0;
+  function render(i){
+    cur=i;var p=P[i];
+    Array.prototype.forEach.call(tabs.children,function(b,j){b.setAttribute('aria-selected',j===i?'true':'false');b.tabIndex=j===i?0:-1});
+    panel.innerHTML='<div class="l"><span class="status '+p.s+'">'+(p.s==='live'?'LIVE':'COMING SOON')+'</span><h3 style="font-size:1.6rem">'+p.h+'</h3><ul>'+p.li.map(function(x){return'<li>'+x+'</li>'}).join('')+'</ul></div>'+
+      '<div class="chat"><div class="q">'+p.q+'</div><div class="a"><div>'+p.a+'</div><div class="srcs">'+p.src.map(function(x){return'<span>'+x+'</span>'}).join('')+'</div></div><div class="ex">Example conversation, illustrative.</div></div>';
+  }
+  P.forEach(function(p,i){
+    var b=document.createElement('button');b.className='tab';b.type='button';b.id='tab-'+i;b.setAttribute('role','tab');
+    b.innerHTML=p.k+(p.s==='live'?' <i class="dot"></i>':' <i class="dot warn"></i>');
+    b.onclick=function(){render(i)};
+    b.onkeydown=function(e){var n=e.key==='ArrowRight'?i+1:e.key==='ArrowLeft'?i-1:null;if(n===null)return;n=(n+P.length)%P.length;render(n);tabs.children[n].focus()};
+    tabs.appendChild(b);
+  });
+  render(0);
+
+
+  /* ---------- product tour ---------- */
+  var TS=[
+    ['Chat','chat','Ask in plain language. Get cited answers.','Answers come only from the graph, flag claims with no source, and end in Approve, Edit or Dismiss. Sources show which are private.'],
+    ['Knowledge graph','graph','One graph for the whole company.','483 records from the sample brand: source hubs, passages and concepts. Filter by type, public or private, and switch lenses to highlight anything with no source.'],
+    ['Radar','radar','The world changed. Here is what it means.','Live regulation and news with severity, an act-by clock, a weekly briefing, and the Auditor log that shows what it checked and caught.'],
+    ['Actions','actions','Drafts with sources. You approve.','Hook, script, shot list and caption, each claim tied to a source. Unsourced drafts are flagged before anyone approves them. Nothing is published automatically.'],
+    ['Workflows','workflows','Run it on a schedule.','Monday content plan, regulation alert response, weekly competitor digest. Every run lands in Actions as pending.'],
+    ['Teams','personas','One workspace, a lens per team.','Marketing is live. Sales, Support, Compliance and Engineering are marked coming soon, and you can suggest another.'],
+    ['Start','onboarding','Start from a URL.','Add notes for the system and private documents. Private files shape strategy and are never quoted publicly.']
+  ];
+  var tt=document.getElementById('ttabs'),timg=document.getElementById('timg'),track=document.getElementById('track'),stk=document.getElementById('tsticky'),cur=-1,stepPx=400;
+  TS.forEach(function(t){var im=new Image();im.src='assets/'+t[1]+'.jpg'});
+  function showT(i){
+    var t=TS[i];
+    Array.prototype.forEach.call(tt.children,function(b,j){b.setAttribute('aria-selected',j===i?'true':'false');b.tabIndex=j===i?0:-1});
+    cur=i;timg.src='assets/'+t[1]+'.jpg';timg.alt='Constellation '+t[0]+' screen, sample data';
+    document.getElementById('thead').textContent=t[2];document.getElementById('tbody').textContent=t[3];
+    document.getElementById('tcrumb').textContent='constellation / '+t[1];
+  }
+  TS.forEach(function(t,i){
+    var b=document.createElement('button');b.className='tab';b.type='button';b.setAttribute('role','tab');b.textContent=t[0];
+    b.onclick=function(){goT(i)};
+    b.onkeydown=function(e){var n=e.key==='ArrowRight'?i+1:e.key==='ArrowLeft'?i-1:null;if(n===null)return;n=(n+TS.length)%TS.length;goT(n);tt.children[n].focus()};
+    tt.appendChild(b);
+  });
+  function sizeT(){stepPx=Math.min(Math.max(innerHeight*.5,300),520);track.style.height=(TS.length*stepPx+stk.offsetHeight)+'px'}
+  function scrollT(){
+    var r=track.getBoundingClientRect(),total=r.height-stk.offsetHeight;
+    if(total<=0)return;
+    var p=Math.min(Math.max(-r.top/total,0),.9999),i=Math.floor(p*TS.length);
+    if(i!==cur){showT(i);var tb=tt.children[i];if(tb&&tt.scrollWidth>tt.clientWidth)tt.scrollTo({left:tb.offsetLeft-16,behavior:'smooth'})}
+  }
+  function goT(i){showT(i);var top=track.getBoundingClientRect().top+window.scrollY+i*stepPx+4;try{window.scrollTo({top:top,behavior:'smooth'})}catch(e){}}
+  showT(0);sizeT();scrollT();
+  var tick=false;
+  addEventListener('scroll',function(){if(tick)return;tick=true;requestAnimationFrame(function(){tick=false;scrollT()})},{passive:true});
+  addEventListener('resize',function(){sizeT();scrollT()});
+
+
+  /* ---------- contact ---------- */
+  var CONTACT_EMAIL='hello@constellation.example'; /* replace with the real inbox before launch */
+  document.getElementById('addr').textContent=CONTACT_EMAIL;
+  document.getElementById('copy').onclick=function(){var b=this;
+    var ok=function(){b.textContent='Copied';setTimeout(function(){b.textContent='Copy'},1500)};
+    try{navigator.clipboard.writeText(CONTACT_EMAIL).then(ok,function(){sel()})}catch(e){sel()}
+    function sel(){var r=document.createRange();r.selectNodeContents(document.getElementById('addr'));var x=getSelection();x.removeAllRanges();x.addRange(r)}};
+  document.getElementById('cform').addEventListener('submit',function(e){
+    e.preventDefault();
+    var g=function(i){return document.getElementById(i).value.trim()},note=document.getElementById('cnote');
+    var name=g('c-name'),email=g('c-email'),bad=false;
+    ['c-name','c-email'].forEach(function(i){document.getElementById(i).removeAttribute('aria-invalid')});
+    if(!name){document.getElementById('c-name').setAttribute('aria-invalid','true');bad=true}
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){document.getElementById('c-email').setAttribute('aria-invalid','true');bad=true}
+    if(bad){note.textContent='Add your name and a valid work email so we can reply.';return}
+    var NL=String.fromCharCode(10);
+    var body=['Name: '+name,'Email: '+email,'Website: '+g('c-site'),'Start with: '+document.getElementById('c-team').value,'',g('c-msg')].join(NL);
+    var href='mailto:'+CONTACT_EMAIL+'?subject='+encodeURIComponent('Constellation demo request')+'&body='+encodeURIComponent(body);
+    note.innerHTML='Your message is ready, but it has not been sent yet. <a href="'+href+'">Open it in your email app</a>, or email '+CONTACT_EMAIL+' directly.';
+  });
+
+  /* ---------- hero constellation ---------- */
+  var T={prod:['Product','#7A89FF'],aud:['Audience','#4FDBA0'],claim:['Claim','#F5BC52'],reg:['Regulation','#FF7585'],comp:['Competitor','#B58CFF'],news:['News signal','#5CC8FF'],doc:['Private doc','#9AA2C9']};
+  var N=[
+    {id:'co',t:'prod',x:.5,y:.5,r:11,l:'Your company',src:'example.com/about',conf:.98,core:1},
+    {id:'p1',t:'prod',x:.27,y:.3,r:7,l:'Hero serum',src:'example.com/products/serum',conf:.96},
+    {id:'p2',t:'prod',x:.22,y:.66,r:6,l:'Discovery kit',src:'example.com/products/kit',conf:.94},
+    {id:'a1',t:'aud',x:.5,y:.15,r:6,l:'Sensitive-skin buyers',src:'example.com/about',conf:.9},
+    {id:'a2',t:'aud',x:.74,y:.2,r:5,l:'Gift buyers',src:'example.com/gifts',conf:.82},
+    {id:'c1',t:'claim',x:.12,y:.4,r:6,l:'"Clinically proven"',src:'example.com/products/serum',conf:.4,bad:1,note:'Unsupported: no independent source found'},
+    {id:'c2',t:'claim',x:.4,y:.82,r:5,l:'"Fragrance-free"',src:'example.com/products/kit',conf:.93},
+    {id:'r1',t:'reg',x:.84,y:.45,r:7,l:'EU labeling rule',src:'regulator.example/notice',conf:.95,note:'Effective in 30 days. Touches 2 products'},
+    {id:'k1',t:'comp',x:.76,y:.78,r:6,l:'Competitor launch',src:'competitor.example/press',conf:.88},
+    {id:'n1',t:'news',x:.62,y:.9,r:5,l:'Retailer list change',src:'news.example/retail',conf:.8},
+    {id:'d1',t:'doc',x:.3,y:.9,r:5,l:'Legal memo',src:'private upload (never quoted)',conf:1,note:'Private: informs strategy only'},
+    {id:'d2',t:'doc',x:.07,y:.82,r:4,l:'Supplier contract',src:'private upload (never quoted)',conf:1,note:'Private: informs strategy only'},
+    {id:'x1',t:'claim',x:.92,y:.12,r:5,l:'Detached node',src:'no live source',conf:0,det:1,note:'Hallucinated: detached, kept as proof'}
+  ];
+  var E=[['co','p1'],['co','p2'],['co','a1'],['co','a2'],['co','c2'],['co','r1'],['co','k1'],['p1','c1'],['p1','a1'],['p2','c2'],['p2','d2'],['r1','p1'],['r1','p2'],['k1','n1'],['n1','a2'],['d1','c1'],['d1','p2'],['a2','r1']];
+  var byId={};N.forEach(function(n){byId[n.id]=n});
+  var cv=document.getElementById('graph'),ctx=cv.getContext('2d'),tip=document.getElementById('tip'),stage=document.getElementById('stage');
+  var W=0,H=0,dpr=1,sel=N[5],hov=null,t0=0,reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var lg=document.getElementById('legend');
+  ['prod','claim','reg','doc'].forEach(function(k){lg.insertAdjacentHTML('beforeend','<span><i style="background:'+T[k][1]+'"></i>'+T[k][0]+'</span>')});
+  function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
+  function size(){var r=cv.getBoundingClientRect();dpr=Math.min(window.devicePixelRatio||1,2);W=r.width;H=r.height;cv.width=W*dpr;cv.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)}
+  function pos(n,t){var dx=reduce?0:Math.sin(t/1700+n.x*9)*.006,dy=reduce?0:Math.cos(t/1900+n.y*7)*.006;return{x:(n.x+dx)*W,y:(n.y+dy)*H}}
+  function draw(t){
+    ctx.clearRect(0,0,W,H);
+    var line=css('--line2'),mute=css('--mute'),text=css('--text'),bad=css('--bad');
+    ctx.lineWidth=1;
+    E.forEach(function(e){var a=pos(byId[e[0]],t),b=pos(byId[e[1]],t),on=sel&&(e[0]===sel.id||e[1]===sel.id);
+      ctx.strokeStyle=on?css('--accent'):line;ctx.globalAlpha=on?.9:.7;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()});
+    ctx.globalAlpha=1;
+    N.forEach(function(n){
+      var p=pos(n,t),c=T[n.t][1],act=(sel===n)||(hov===n);
+      if(n.core||act){ctx.beginPath();ctx.arc(p.x,p.y,n.r+8,0,6.283);ctx.fillStyle=c;ctx.globalAlpha=.16;ctx.fill();ctx.globalAlpha=1}
+      ctx.beginPath();ctx.arc(p.x,p.y,n.r,0,6.283);
+      if(n.det){ctx.setLineDash([3,3]);ctx.strokeStyle=mute;ctx.lineWidth=1.5;ctx.stroke();ctx.setLineDash([])}
+      else{ctx.fillStyle=c;ctx.fill()}
+      if(n.bad){ctx.beginPath();ctx.arc(p.x,p.y,n.r+3.5,0,6.283);ctx.strokeStyle=bad;ctx.lineWidth=1.5;ctx.stroke()}
+      ctx.font='500 11px JetBrains Mono, ui-monospace, monospace';ctx.fillStyle=act?text:mute;
+      var lx=p.x+n.r+7,al='left';if(p.x>W*.74){lx=p.x-n.r-7;al='right'}
+      ctx.textAlign=al;ctx.textBaseline='middle';ctx.fillText(n.l,lx,p.y);
+    });
+    placeTip(t);
+  }
+  function placeTip(t){
+    var n=hov||sel;if(!n){tip.hidden=true;return}
+    var p=pos(n,t);tip.hidden=false;
+    tip.innerHTML='<b>'+n.l+'</b><span>'+T[n.t][0]+' · confidence '+Math.round(n.conf*100)+'%</span><div class="src">source: '+n.src+'</div>'+(n.note?'<div class="flag" style="color:'+(n.bad||n.det?'var(--bad)':'var(--mute)')+'">'+n.note+'</div>':'');
+    var tw=tip.offsetWidth,x=Math.max(tw/2+8,Math.min(W-tw/2-8,p.x));
+    tip.style.left=x+'px';tip.style.top=(p.y-n.r)+'px';
+  }
+  function hit(e){var r=cv.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top,best=null,bd=22;
+    N.forEach(function(n){var p=pos(n,performance.now()),d=Math.hypot(p.x-x,p.y-y);if(d<bd){bd=d;best=n}});return best}
+  cv.addEventListener('pointermove',function(e){hov=hit(e);cv.style.cursor=hov?'pointer':'default';if(reduce)draw(0)});
+  cv.addEventListener('pointerleave',function(){hov=null;if(reduce)draw(0)});
+  cv.addEventListener('click',function(e){var n=hit(e);if(n)sel=n;if(reduce)draw(0)});
+  function loop(t){draw(t);requestAnimationFrame(loop)}
+  size();
+  window.addEventListener('resize',function(){size();if(reduce)draw(0)});
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(){if(reduce)draw(0)});
+  new MutationObserver(function(){if(reduce)draw(0)}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){if(reduce)draw(0)});
+  if(reduce)draw(0);else requestAnimationFrame(loop);
+})();
+</script>
+
+</body>
+</html>
