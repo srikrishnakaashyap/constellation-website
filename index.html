@@ -257,6 +257,7 @@ footer{display:grid;gap:28px;padding-block:8px 48px;color:var(--mute);font-size:
 .rail li:has(.status.live)::before{background:var(--ok);border-color:var(--ok)}
 .rail li p{color:var(--mute);font-size:14.5px}
 .rail li b{font-weight:600}
+@media(min-width:901px){.scn.wide{grid-column:1/-1}.scn.wide .rail{grid-template-columns:repeat(3,minmax(0,1fr));gap:28px}.scn.wide .rail::before{display:none}.scn.wide .rail li{padding:0 0 0 32px}}
 .memnote{margin-top:16px;display:flex;gap:12px;align-items:flex-start;border:1px dashed var(--line2);border-radius:12px;padding:16px 20px;color:var(--mute);font-size:14.5px}
 .memnote .dot{margin-top:.5em;flex:none}.memnote b{color:var(--text)}
 @media(prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
@@ -344,6 +345,14 @@ footer{display:grid;gap:28px;padding-block:8px 48px;color:var(--mute);font-size:
           <li><span class="status live">LIVE TODAY</span><b>Engineering notes the change.</b><p>The note is picked up as team knowledge, so a claim that says "December" is checked against it.</p></li>
           <li><span class="status soon">NEXT</span><b>It reaches Sales and Marketing.</b><p>Anyone whose work touches the old date is shown the update: the pitch, the post, the support answer.</p></li>
           <li><span class="status soon">NEXT</span><b>Everyone answers the same way.</b><p>Sales asks "When does one-click pay launch?" and gets January, with who changed it and when.</p></li>
+        </ol>
+      </article>
+      <article class="scn wide">
+        <div class="scn-h"><span class="who">Someone is suddenly out</span><h3>"I'm out sick. Here is where everything stands."</h3></div>
+        <ol class="rail">
+          <li><span class="status soon">NEXT</span><b>They mark themselves out.</b><p>One click. Constellation gathers what they were working on: open drafts, scheduled workflows, pending approvals, and the claims they were checking.</p></li>
+          <li><span class="status soon">NEXT</span><b>A handoff brief is built.</b><p>A short, sourced summary of each item, what is done, what is waiting, and what changed. Private notes stay private unless they choose to share them.</p></li>
+          <li><span class="status soon">NEXT</span><b>A teammate picks it up.</b><p>They open the shared brief, ask follow-up questions against the same graph, and continue with nothing lost in a chat thread or someone's head.</p></li>
         </ol>
       </article>
     </div>
@@ -533,6 +542,7 @@ footer{display:grid;gap:28px;padding-block:8px 48px;color:var(--mute);font-size:
           <div class="pc"><h3>Workflow mapping</h3><p>Teams, owners, processes and handoffs become first-class graph entities, not just the public company.</p></div>
           <div class="pc"><h3>Role-based views and sharing</h3><p>Per-persona home screens, team spaces, and "share this context with Legal" with permissions on private nodes.</p></div>
           <div class="pc"><h3>Connectors</h3><p>Slack, Google Drive, Notion, Confluence, CRM and ticketing, so missing context is captured where it already lives.</p></div>
+          <div class="pc"><h3>Handoffs when someone is out</h3><p>Mark yourself out and a sourced brief of your open work is ready to share with a teammate.</p></div>
           <div class="pc"><h3>Corrections that travel</h3><p>Tell the next person who asks that an answer changed, and share Engineering updates with Sales and Marketing automatically.</p></div>
           <div class="pc"><h3>Passage-level citations</h3><p>Every source chunked into passages and concepts, so each citation points at the exact sentence.</p></div>
         </div>
